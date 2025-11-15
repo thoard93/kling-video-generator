@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .upload-box {
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+        }
+        button {
+            padding: 20px 40px;
+            font-size: 18px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        #preview {
+            max-width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Upload Test</h1>
+    
+    <div class="upload-box" onclick="document.getElementById('file').click()">
+        <h2>📸 TAP HERE</h2>
+        <p>Click to select photo</p>
+    </div>
+    
+    <input type="file" id="file" accept="image/*" style="display:none" onchange="showPreview(this)">
+    
+    <img id="preview" style="display:none">
+    
+    <button id="uploadBtn" style="display:none" onclick="uploadPhoto()">Upload Photo</button>
+    
+    <div id="status" style="margin-top:20px; padding:15px; background:white; border-radius:8px; display:none;"></div>
+    
+    <script>
+        const API_URL = 'https://kling-video-generator.onrender.com';
+        let selectedFile = null;
+        
+        function showPreview(input) {
+            if (input.files && input.files[0]) {
+                selectedFile = input.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview').src = e.target.result;
+                    document.getElementById('preview').style.display = 'block';
+                    document.getElementById('uploadBtn').style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+                showStatus('Photo selected! Tap "Upload Photo" to continue.', false);
+            }
+        }
+        
+        async function uploadPhoto() {
+            if (!selectedFile) return;
+            
+            showStatus('Uploading... This may take 5-10 minutes. Please wait!', false);
+            
+            try {
+                const formData = new FormData();
+                formData.append('image', selectedFile);
+                
+                const response = await fetch(`${API_URL}/generate`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showStatus('Success! Video URL: ' + result.video_url, false);
+                    
+                    // Download video
+                    window.location.href = API_URL + result.video_url;
+                } else {
+                    showStatus('Error: ' + (result.error || 'Unknown error'), true);
+                }
+                
+            } catch (error) {
+                showStatus('Error: ' + error.message, true);
+            }
+        }
+        
+        function showStatus(message, isError) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.style.display = 'block';
+            status.style.background = isError ? '#ffebee' : '#e8f5e9';
+            status.style.color = isError ? '#c62828' : '#2e7d32';
+        }
+    </script>
+</body>
+</html>
